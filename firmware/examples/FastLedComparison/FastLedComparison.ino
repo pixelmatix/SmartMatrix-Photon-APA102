@@ -3,10 +3,10 @@
 #include "application.h"
 
 #if (SMARTMATRIX_ENABLED == 1)
-  #include <SmartMatrix3.h>
+  #include "SmartMatrix3/SmartMatrix3.h"
 #endif
 
-#include "FastLED/FastLED.h"
+#include "FastLEDSmartMatrix/FastLEDSmartMatrix.h"
 FASTLED_USING_NAMESPACE;
 
 #if (SMARTMATRIX_ENABLED == 1)
