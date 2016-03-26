@@ -83,16 +83,12 @@ const uint8_t scale = 256 / kMatrixWidth;
   void dimAll(byte value)
   {
     for (int i = 0; i < NUM_LEDS; i++) {
-      CRGB c = leds[i];
-      c.nscale8(value);
-      leds[i] = c;
+      leds[i].nscale8(value);
     }
   }
 #endif
 
-
 #define BRIGHTNESS 255
-
 
 void setup() {
 #if (SMARTMATRIX_ENABLED == 1)
@@ -127,7 +123,7 @@ void loop() {
 #if (SMARTMATRIX_ENABLED == 1)
       buffer[XY(x, y)] = CRGB(CHSV(x + hue, 255, 255));
 #else
-      leds[XY(x, y)] = CRGB(CHSV(x + hue, 255, 255));
+      leds[XY(x, y)] = CHSV(x + hue, 255, 255);
 #endif      
     }
 
