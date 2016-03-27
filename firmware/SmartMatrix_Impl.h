@@ -32,7 +32,6 @@
 #define ROW_CALCULATION_ISR_PRIORITY   0xFE // 0xFF = lowest priority
 
 // hardware-specific definitions
-// prescale of 7 is F_BUS/128
 #define LATCH_TIMER_PRESCALE  31
 #define TIMER_FREQUENCY     ((SystemCoreClock / 2) / LATCH_TIMER_PRESCALE + 1)
 #define NS_TO_TICKS(X)      (uint32_t)(TIMER_FREQUENCY * ((X) / 1000000000.0))
@@ -390,6 +389,9 @@ void SmartMatrix3<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlag
     nvicStructure.NVIC_IRQChannelSubPriority = 1;
     nvicStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&nvicStructure);
+
+    // do initial pass through refreshing display, setting layer options for the first time
+    matrixCalculations(true);
 }
 
 // called by SPI when transfer is done
