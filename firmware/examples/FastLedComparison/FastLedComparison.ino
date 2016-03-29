@@ -18,7 +18,7 @@
 #include "application.h"
 
 #if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
-  #include "SmartMatrix3/SmartMatrix3.h"
+  #include "SmartMatrix3_Photon_Apa102/SmartMatrix3_Photon_Apa102.h"
 #endif
 
 #include "FastLEDSmartMatrix/FastLEDSmartMatrix.h"

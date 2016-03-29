@@ -5,7 +5,7 @@
 
 #include "application.h"
 
-#include "SmartMatrix3/SmartMatrix3.h"
+#include "SmartMatrix3_Photon_Apa102/SmartMatrix3_Photon_Apa102.h"
 #include "FastLEDSmartMatrix/FastLEDSmartMatrix.h"
 FASTLED_USING_NAMESPACE;
 

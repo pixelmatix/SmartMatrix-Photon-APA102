@@ -1,8 +1,8 @@
 {
-  "name": "SmartMatrix3",
+  "name": "SmartMatrix3_Photon_Apa102",
   "author": "Louis Beaudoin (Pixelmatix)",
   "license": "MIT",
   "version": "0.3.0",
   "description": "SmartMatrix Library for APA102 on Photon",
-  "namespace": "SmartMatrix"
+  "namespace": "SmartMatrix3_Photon_Apa102"
 }

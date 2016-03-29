@@ -21,7 +21,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "SmartMatrix3.h"
+#include "SmartMatrix3_Photon_Apa102.h"
 #include "application.h"
 
 
