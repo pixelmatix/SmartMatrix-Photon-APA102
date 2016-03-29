@@ -1,15 +1,30 @@
-#define SMARTMATRIX_ENABLED   1
+/*
+  Demo intended to compare APA102 refreshing using Temporal Dithering, no Dithering, and SmartMatrix with Dynamic Global Brightness Control
+  Set MODE and BRIGHTNESS defines at the top to reproduce the results in the demo video (MODE_SMARTMATRIX_COLORCORRECTION wasn't used in the video)
+
+  Connect APA102 Data Pin to D2
+  Connect APA102 Clock Pin to D4
+*/
+
+#define MODE_SMARTMATRIX_NOCOLORCORRECTION   0
+#define MODE_SMARTMATRIX_COLORCORRECTION     1
+#define MODE_FASTLED_DITHERING               2
+#define MODE_FASTLED_NODITHERING             3
+
+// SET SKETCH OPTIONS HERE:
+#define MODE MODE_SMARTMATRIX_NOCOLORCORRECTION
+#define BRIGHTNESS 255
 
 #include "application.h"
 
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
   #include "SmartMatrix3/SmartMatrix3.h"
 #endif
 
 #include "FastLEDSmartMatrix/FastLEDSmartMatrix.h"
 FASTLED_USING_NAMESPACE;
 
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
   #define COLOR_DEPTH 24                  // known working: 24, 48 - If the sketch uses type `rgb24` directly, COLOR_DEPTH must be 24
   const uint8_t kMatrixWidth = 16;        // known working: 16, 32, 48, 64
   const uint8_t kMatrixHeight = 16;       // known working: 32, 64, 96, 128
@@ -46,7 +61,7 @@ FASTLED_USING_NAMESPACE;
 
 const uint8_t scale = 256 / kMatrixWidth;
 
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
   uint16_t XY(uint8_t x, uint8_t y) {
     return kMatrixWidth * y + x;
   }
@@ -68,7 +83,7 @@ const uint8_t scale = 256 / kMatrixWidth;
   }
 #endif
 
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
   // scale the brightness of all pixels down
   void dimAll(byte value)
   {
@@ -88,10 +103,8 @@ const uint8_t scale = 256 / kMatrixWidth;
   }
 #endif
 
-#define BRIGHTNESS 255
-
 void setup() {
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
   matrix.addLayer(&backgroundLayer);
   matrix.addLayer(&scrollingLayer);
   matrix.begin();
@@ -101,15 +114,22 @@ void setup() {
   FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, COLOR_ORDER, DATA_RATE_MHZ(1)>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
   FastLED.setBrightness( BRIGHTNESS );
 
-  FastLED.setDither(BINARY_DITHER);
-  //FastLED.setDither(DISABLE_DITHER);
+  #if (MODE == MODE_FASTLED_DITHERING)
+    FastLED.setDither(BINARY_DITHER);
+  #else
+    FastLED.setDither(DISABLE_DITHER);
+  #endif
+
+  FastLED.show();  
 #endif
+
+  delay(2000);
 }
 
 void loop() {
   EVERY_N_MILLISECONDS(1000/30) {
 
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
     buffer = backgroundLayer.backBuffer();
 #endif      
 
@@ -120,7 +140,7 @@ void loop() {
     
     for (uint8_t x = 0; x < kMatrixWidth; x++) {
       uint8_t y = quadwave8(x * 2 + theta) / scale;
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
       buffer[XY(x, y)] = CRGB(CHSV(x + hue, 255, 255));
 #else
       leds[XY(x, y)] = CHSV(x + hue, 255, 255);
@@ -130,12 +150,15 @@ void loop() {
     theta++;
     hue++;
 
-#if (SMARTMATRIX_ENABLED == 1)
+#if (MODE == MODE_SMARTMATRIX_NOCOLORCORRECTION || MODE == MODE_SMARTMATRIX_COLORCORRECTION)
     backgroundLayer.swapBuffers(true);
+#else
+    FastLED.show();
 #endif
   }
 
-#if (SMARTMATRIX_ENABLED == 0)
+#if (MODE == MODE_FASTLED_DITHERING)
+  // FastLED needs to update LEDs during idle time to do dithering
   FastLED.show();
 #endif
 }
