@@ -111,7 +111,7 @@ void setup() {
   matrix.setBrightness(BRIGHTNESS);
   backgroundLayer.enableColorCorrection(false);
 #else
-  FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, COLOR_ORDER, DATA_RATE_MHZ(1)>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
+  FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, COLOR_ORDER, DATA_RATE_MHZ(12)>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
   FastLED.setBrightness( BRIGHTNESS );
 
   #if (MODE == MODE_FASTLED_DITHERING)
