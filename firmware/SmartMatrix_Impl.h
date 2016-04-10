@@ -179,9 +179,6 @@ INLINE void SmartMatrix3<refreshDepth, matrixWidth, matrixHeight, panelType, opt
         uint8_t globalbrightness = (0x20UL * (dimmingMaximum - dimmingFactor)) / dimmingMaximum;
         uint8_t localshift = 0;
 
-        if(globalbrightness == 0x20)
-            globalbrightness = 0x1f;
-
 #if 1
         // dynamic GBC control: lower GBC value until it's at the lowest, or the brightest RGB channel has its MSB set
         uint16_t value = temp0red | temp0green | temp0blue;
@@ -191,6 +188,9 @@ INLINE void SmartMatrix3<refreshDepth, matrixWidth, matrixHeight, panelType, opt
             globalbrightness >>= 1;
             localshift++;
         }
+
+        if(globalbrightness == 0x20)
+            globalbrightness = 0x1f;
 
         // shift needs to put 16-bit color value into lowest byte, which will be sent over SPI
         localshift = 8 - localshift;
