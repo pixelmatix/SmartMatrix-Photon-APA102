@@ -106,6 +106,8 @@ class SMLayerBackground : public SM_Layer {
         static volatile bool swapPending;
         static bool swapWithCopy;
         void handleBufferSwap(void);
+        bitmap_font *font;
+        color_chan_t backgroundColorCorrectionLUT[256];
 };
 
 #include "Layer_Background_Impl.h"
