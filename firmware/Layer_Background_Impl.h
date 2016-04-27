@@ -28,6 +28,8 @@ unsigned char SMLayerBackground<RGB, optionFlags>::currentDrawBuffer = 0;
 template <typename RGB, unsigned int optionFlags>
 unsigned char SMLayerBackground<RGB, optionFlags>::currentRefreshBuffer = 1;
 template <typename RGB, unsigned int optionFlags>
+unsigned char SMLayerBackground<RGB, optionFlags>::previousRefreshBuffer = 2;
+template <typename RGB, unsigned int optionFlags>
 volatile bool SMLayerBackground<RGB, optionFlags>::swapPending = false;
 
 template <typename RGB, unsigned int optionFlags>
@@ -39,6 +41,9 @@ SMLayerBackground<RGB, optionFlags>::SMLayerBackground(RGB * buffer, uint16_t wi
 
     currentDrawBufferPtr = &backgroundBuffer[0 * (this->matrixWidth * this->matrixHeight)];
     currentRefreshBufferPtr = &backgroundBuffer[1 * (this->matrixWidth * this->matrixHeight)];
+    if(numBuffers > 2) {
+        previousRefreshBufferPtr = &backgroundBuffer[2 * (this->matrixWidth * this->matrixHeight)];
+    }
 }
 
 template <typename RGB, unsigned int optionFlags>
@@ -856,13 +861,24 @@ void SMLayerBackground<RGB, optionFlags>::handleBufferSwap(void) {
     if (!swapPending)
         return;
 
-    unsigned char newDrawBuffer = currentRefreshBuffer;
+    if(numBuffers > 2) {
+        unsigned char newDrawBuffer = previousRefreshBuffer;
+        previousRefreshBuffer = currentRefreshBuffer;
+        currentRefreshBuffer = currentDrawBuffer;
+        currentDrawBuffer = newDrawBuffer;
 
-    currentRefreshBuffer = currentDrawBuffer;
-    currentDrawBuffer = newDrawBuffer;
+        currentRefreshBufferPtr = &backgroundBuffer[currentRefreshBuffer * (this->matrixWidth * this->matrixHeight)];
+        previousRefreshBufferPtr = &backgroundBuffer[previousRefreshBuffer * (this->matrixWidth * this->matrixHeight)];
+        currentDrawBufferPtr = &backgroundBuffer[currentDrawBuffer * (this->matrixWidth * this->matrixHeight)];
+    }
+    else {
+        unsigned char newDrawBuffer = currentRefreshBuffer;
+        currentRefreshBuffer = currentDrawBuffer;
+        currentDrawBuffer = newDrawBuffer;
 
-    currentRefreshBufferPtr = &backgroundBuffer[currentRefreshBuffer * (this->matrixWidth * this->matrixHeight)];
-    currentDrawBufferPtr = &backgroundBuffer[currentDrawBuffer * (this->matrixWidth * this->matrixHeight)];
+        currentRefreshBufferPtr = &backgroundBuffer[currentRefreshBuffer * (this->matrixWidth * this->matrixHeight)];
+        currentDrawBufferPtr = &backgroundBuffer[currentDrawBuffer * (this->matrixWidth * this->matrixHeight)];
+    }
 
     swapPending = false;
 }
@@ -938,10 +954,4 @@ template<typename RGB, unsigned int optionFlags>
 RGB *SMLayerBackground<RGB, optionFlags>::getRealBackBuffer() {
   return &backgroundBuffer[currentDrawBuffer * (this->matrixWidth * this->matrixHeight)];
 }
-
-template<typename RGB, unsigned int optionFlags>
-RGB *SMLayerBackground<RGB, optionFlags>::getCurrentRefreshRow(uint16_t y) {
-  return &currentRefreshBufferPtr[y*this->matrixWidth];
-}
-
 

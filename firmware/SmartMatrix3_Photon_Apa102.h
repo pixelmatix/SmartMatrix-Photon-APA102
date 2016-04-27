@@ -134,7 +134,8 @@ private:
 
 #define SMARTMATRIX_ALLOCATE_BACKGROUND_LAYER(layer_name, width, height, storage_depth, background_options) \
     typedef RGB_TYPE(storage_depth) SM_RGB;                                                                 \
-    static RGB_TYPE(storage_depth) backgroundBitmap[2*width*height];                                        \
+    const int backgroundLayerNumBuffers = (background_options & SM_BACKGROUND_OPTIONS_TRIPLE_BUFFERING) ? 3 : 2; \
+    static RGB_TYPE(storage_depth) backgroundBitmap[backgroundLayerNumBuffers*width*height];  \
     static SMLayerBackground<RGB_TYPE(storage_depth), background_options> layer_name(backgroundBitmap, width, height)  
 
 

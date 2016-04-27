@@ -28,7 +28,8 @@
 #include "MatrixCommon.h"
 #include "MatrixFontCommon.h"
 
-#define SM_BACKGROUND_OPTIONS_NONE     0
+#define SM_BACKGROUND_OPTIONS_NONE                  0
+#define SM_BACKGROUND_OPTIONS_TRIPLE_BUFFERING      (1 << 0)
 
 template <typename RGB, unsigned int optionFlags>
 class SMLayerBackground : public SM_Layer {
@@ -82,10 +83,9 @@ class SMLayerBackground : public SM_Layer {
 
         RGB *currentDrawBufferPtr;
         RGB *currentRefreshBufferPtr;
+        RGB *previousRefreshBufferPtr;
 
         RGB *backgroundBuffer;
-
-        RGB *getCurrentRefreshRow(uint16_t y);
 
         void getBackgroundRefreshPixel(uint16_t x, uint16_t y, RGB &refreshPixel);
         bool getForegroundRefreshPixel(uint16_t x, uint16_t y, RGB &xyPixel);
@@ -101,8 +101,10 @@ class SMLayerBackground : public SM_Layer {
         uint8_t backgroundBrightness = 255;
 
         // keeping track of drawing buffers
+        const unsigned char numBuffers = (optionFlags & SM_BACKGROUND_OPTIONS_TRIPLE_BUFFERING) ? 3 : 2;
         static unsigned char currentDrawBuffer;
         static unsigned char currentRefreshBuffer;
+        static unsigned char previousRefreshBuffer;
         static volatile bool swapPending;
         static bool swapWithCopy;
         void handleBufferSwap(void);
