@@ -971,7 +971,7 @@ void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_frames(in
     while (swapPending);
 
     // wait for previous interpolation to complete
-    while (framesInterpolated < totalFramesToInterpolate);
+    if(numBuffers > 2) while (framesInterpolated < totalFramesToInterpolate);
 
     // set new interpolation values
     newFramesToInterpolate = framesToInterpolate;
@@ -994,7 +994,7 @@ void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_frames(in
 template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_ms(int interpolationSpan_ms, bool copy) {
     while (swapPending);
-    while (framesInterpolated < totalFramesToInterpolate);
+    if(numBuffers > 2) while (framesInterpolated < totalFramesToInterpolate);
 
     newFramesToInterpolate = (interpolationSpan_ms * refreshRate) / 1000;
 
