@@ -56,15 +56,26 @@ void SMLayerBackground<RGB, optionFlags>::frameRefreshCallback(void) {
 template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::fillRefreshRow(uint16_t hardwareY, rgb48 refreshRow[]) {
     RGB currentPixel;
+    RGB previousPixel;
     int i;
 
     if(this->ccEnabled) {
         for(i=0; i<this->matrixWidth; i++) {
             currentPixel = currentRefreshBufferPtr[(hardwareY * this->matrixWidth) + i];
-            // load background pixel with color correction
-            refreshRow[i] = rgb48(backgroundColorCorrectionLUT[currentPixel.red],
-                backgroundColorCorrectionLUT[currentPixel.green],
-                backgroundColorCorrectionLUT[currentPixel.blue]);
+
+            // only do interpolation calculations if needed
+            if(numBuffers > 2 && fcCoefficient < 0x10000) {
+                previousPixel = previousRefreshBufferPtr[(hardwareY * this->matrixWidth) + i];
+                // load background pixel with interpolation TBD: use background color correction table
+                refreshRow[i] = rgb48(lutInterpolate(backgroundColorCorrectionLUT, ((previousPixel.red * icPrev + currentPixel.red * icNext) >> 16)) << 1,
+                    lutInterpolate(backgroundColorCorrectionLUT, ((previousPixel.green * icPrev + currentPixel.green * icNext) >> 16)) << 1,
+                    lutInterpolate(backgroundColorCorrectionLUT, ((previousPixel.blue * icPrev + currentPixel.blue * icNext) >> 16)) << 1);
+            } else {
+                // load background pixel with color correction
+                refreshRow[i] = rgb48(backgroundColorCorrectionLUT[currentPixel.red] << 1,
+                    backgroundColorCorrectionLUT[currentPixel.green] << 1,
+                    backgroundColorCorrectionLUT[currentPixel.blue] << 1);
+            }
         }
     } else {
         for(i=0; i<this->matrixWidth; i++) {
@@ -78,15 +89,26 @@ void SMLayerBackground<RGB, optionFlags>::fillRefreshRow(uint16_t hardwareY, rgb
 template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::fillRefreshRow(uint16_t hardwareY, rgb24 refreshRow[]) {
     RGB currentPixel;
+    RGB previousPixel;
     int i;
 
     if(this->ccEnabled) {
         for(i=0; i<this->matrixWidth; i++) {
             currentPixel = currentRefreshBufferPtr[(hardwareY * this->matrixWidth) + i];
-            // load background pixel with color correction
-            refreshRow[i] = rgb48(backgroundColorCorrectionLUT[currentPixel.red],
-                backgroundColorCorrectionLUT[currentPixel.green],
-                backgroundColorCorrectionLUT[currentPixel.blue]);
+
+            // only do interpolation calculations if needed
+            if(numBuffers > 2 && fcCoefficient < 0x10000) {
+                previousPixel = previousRefreshBufferPtr[(hardwareY * this->matrixWidth) + i];
+                // load background pixel with interpolation TBD: use background color correction table
+                refreshRow[i] = rgb48(lutInterpolate(backgroundColorCorrectionLUT, ((previousPixel.red * icPrev + currentPixel.red * icNext) >> 16)) << 1,
+                    lutInterpolate(backgroundColorCorrectionLUT, ((previousPixel.green * icPrev + currentPixel.green * icNext) >> 16)) << 1,
+                    lutInterpolate(backgroundColorCorrectionLUT, ((previousPixel.blue * icPrev + currentPixel.blue * icNext) >> 16)) << 1);
+            } else {
+                // load background pixel with color correction
+                refreshRow[i] = rgb48(backgroundColorCorrectionLUT[currentPixel.red] << 1,
+                    backgroundColorCorrectionLUT[currentPixel.green] << 1,
+                    backgroundColorCorrectionLUT[currentPixel.blue] << 1);
+            }
         }
     } else {
         for(i=0; i<this->matrixWidth; i++) {
@@ -97,8 +119,28 @@ void SMLayerBackground<RGB, optionFlags>::fillRefreshRow(uint16_t hardwareY, rgb
     }
 }
 
-extern volatile int totalFramesToInterpolate;
-extern volatile int framesInterpolated;
+// function from Fadecandy
+template <typename RGB, unsigned int optionFlags>
+uint32_t SMLayerBackground<RGB, optionFlags>::calculateFcInterpCoefficient(void)
+{
+    /*
+     * Calculate our interpolation coefficient. This is a value between
+     * 0x0000 and 0x10000, representing some point in between fbPrev and fbNext.
+     *
+     * We timestamp each frame at the moment its final packet has been received.
+     * In other words, fbNew has no valid timestamp yet, and fbPrev/fbNext both
+     * have timestamps in the recent past.
+     *
+     * fbNext's timestamp indicates when both fbPrev and fbNext entered their current
+     * position in the keyframe queue. The difference between fbPrev and fbNext indicate
+     * how long the interpolation between those keyframes should take.
+     */
+
+    if(framesInterpolated >= totalFramesToInterpolate)
+        return 0x10000;
+
+    return (0x10000 * framesInterpolated) / totalFramesToInterpolate;
+}
 
 template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::drawPixel(int16_t x, int16_t y, const RGB& color) {
@@ -858,9 +900,24 @@ void SMLayerBackground<RGB, optionFlags>::drawMonoBitmap(int16_t x, int16_t y, u
 
 template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::handleBufferSwap(void) {
+    // do once-per-frame interpolation calculations
+    if(numBuffers > 2) {
+        if(framesInterpolated < totalFramesToInterpolate)
+            framesInterpolated++;
+
+        fcCoefficient = calculateFcInterpCoefficient();
+        icPrev = 257 * (0x10000 - fcCoefficient);
+        icNext = 257 * fcCoefficient;
+    }
+
     if (!swapPending)
         return;
 
+    // start interpolation for the new frame
+    framesInterpolated = 0;
+    totalFramesToInterpolate = newFramesToInterpolate;
+
+    // move buffer pointers around so new data is used for refresh, old data is now used by the app for drawing
     if(numBuffers > 2) {
         unsigned char newDrawBuffer = previousRefreshBuffer;
         previousRefreshBuffer = currentRefreshBuffer;
@@ -887,14 +944,78 @@ void SMLayerBackground<RGB, optionFlags>::handleBufferSwap(void) {
 // waits until current swap is complete if copy is enabled
 template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::swapBuffers(bool copy) {
+    // wait for previous swap to complete
     while (swapPending);
 
+    // swap without interpolation
+    newFramesToInterpolate = 0;
+
+    // start new swap
     swapPending = true;
 
+    // if copy of new frame to drawing buffer is requested
+    if (copy) {
+        // need to wait until the current swap is complete before starting copy
+        while (swapPending);
+
+        // new data is now in currentRefreshBuffer, copy to currentDrawBuffer
+        memcpy(currentDrawBufferPtr, currentRefreshBufferPtr, sizeof(RGB) * (this->matrixWidth * this->matrixHeight));
+    }
+}
+
+// waits until previous swap and previous interpolation span is complete
+// waits until current swap is complete if copy is enabled
+template <typename RGB, unsigned int optionFlags>
+void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_frames(int framesToInterpolate, bool copy) {
+    // wait for previous swap to complete
+    while (swapPending);
+
+    // wait for previous interpolation to complete
+    while (framesInterpolated < totalFramesToInterpolate);
+
+    // set new interpolation values
+    newFramesToInterpolate = framesToInterpolate;
+
+    // enable swap
+    swapPending = true;
+
+    // if copy of new frame to drawing buffer is requested
+    if (copy) {
+        // need to wait until the current swap is complete before starting copy
+        while (swapPending);
+
+        // new data is now in currentRefreshBuffer, copy to currentDrawBuffer
+        memcpy(currentDrawBufferPtr, currentRefreshBufferPtr, sizeof(RGB) * (this->matrixWidth * this->matrixHeight));
+    }
+}
+
+// waits until previous swap and previous interpolation span is complete
+// waits until current swap is complete if copy is enabled
+template <typename RGB, unsigned int optionFlags>
+void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_ms(int interpolationSpan_ms, bool copy) {
+    while (swapPending);
+    while (framesInterpolated < totalFramesToInterpolate);
+
+    newFramesToInterpolate = (interpolationSpan_ms * refreshRate) / 1000;
+
+    swapPending = true;
     if (copy) {
         while (swapPending);
         memcpy(currentDrawBufferPtr, currentRefreshBufferPtr, sizeof(RGB) * (this->matrixWidth * this->matrixHeight));
     }
+}
+
+template <typename RGB, unsigned int optionFlags>
+bool SMLayerBackground<RGB, optionFlags>::isSwapPending(void) {
+    return swapPending;
+}
+
+// also returns true if swap is pending (as interpolation has not yet started)
+template <typename RGB, unsigned int optionFlags>
+bool SMLayerBackground<RGB, optionFlags>::isInterpolationPending(void) {
+    if(swapPending)
+        return true;
+    return (framesInterpolated < totalFramesToInterpolate);
 }
 
 template <typename RGB, unsigned int optionFlags>

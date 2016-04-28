@@ -40,6 +40,10 @@ class SMLayerBackground : public SM_Layer {
         void fillRefreshRow(uint16_t hardwareY, rgb24 refreshRow[]);
 
         void swapBuffers(bool copy = true);
+        void swapBuffersWithInterpolation_frames(int framesToInterpolate, bool copy = true);
+        void swapBuffersWithInterpolation_ms(int interpolationSpan_ms, bool copy = true);
+        bool isSwapPending();
+        bool isInterpolationPending();
         void copyRefreshToDrawing(void);
         void drawPixel(int16_t x, int16_t y, const RGB& color);
         void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const RGB& color);
@@ -99,6 +103,7 @@ class SMLayerBackground : public SM_Layer {
         static bool getBitmapPixelAtXY(uint8_t x, uint8_t y, uint8_t width, uint8_t height, const uint8_t *bitmap);
 
         uint8_t backgroundBrightness = 255;
+        color_chan_t backgroundColorCorrectionLUT[257];
 
         // keeping track of drawing buffers
         const unsigned char numBuffers = (optionFlags & SM_BACKGROUND_OPTIONS_TRIPLE_BUFFERING) ? 3 : 2;
@@ -108,8 +113,16 @@ class SMLayerBackground : public SM_Layer {
         static volatile bool swapPending;
         static bool swapWithCopy;
         void handleBufferSwap(void);
+        uint32_t calculateFcInterpCoefficient(void);
         bitmap_font *font;
-        color_chan_t backgroundColorCorrectionLUT[256];
+
+        uint32_t fcCoefficient;
+        uint32_t icPrev;
+        uint32_t icNext;
+        uint32_t newFramesToInterpolate;
+        // these values are updated in an ISR
+        volatile uint32_t totalFramesToInterpolate;
+        volatile uint32_t framesInterpolated;
 };
 
 #include "Layer_Background_Impl.h"
