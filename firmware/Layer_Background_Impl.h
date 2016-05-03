@@ -966,7 +966,7 @@ void SMLayerBackground<RGB, optionFlags>::swapBuffers(bool copy) {
 // waits until previous swap and previous interpolation span is complete
 // waits until current swap is complete if copy is enabled
 template <typename RGB, unsigned int optionFlags>
-void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_frames(int framesToInterpolate, bool copy) {
+void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_frames(uint32_t framesToInterpolate, bool copy) {
     // wait for previous swap to complete
     while (swapPending);
 
@@ -992,7 +992,7 @@ void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_frames(in
 // waits until previous swap and previous interpolation span is complete
 // waits until current swap is complete if copy is enabled
 template <typename RGB, unsigned int optionFlags>
-void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_ms(int interpolationSpan_ms, bool copy) {
+void SMLayerBackground<RGB, optionFlags>::swapBuffersWithInterpolation_ms(uint32_t interpolationSpan_ms, bool copy) {
     while (swapPending);
     if(numBuffers > 2) while (framesInterpolated < totalFramesToInterpolate);
 

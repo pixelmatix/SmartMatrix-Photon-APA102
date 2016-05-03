@@ -40,8 +40,8 @@ class SMLayerBackground : public SM_Layer {
         void fillRefreshRow(uint16_t hardwareY, rgb24 refreshRow[]);
 
         void swapBuffers(bool copy = true);
-        void swapBuffersWithInterpolation_frames(int framesToInterpolate, bool copy = true);
-        void swapBuffersWithInterpolation_ms(int interpolationSpan_ms, bool copy = true);
+        void swapBuffersWithInterpolation_frames(uint32_t framesToInterpolate, bool copy = true);
+        void swapBuffersWithInterpolation_ms(uint32_t interpolationSpan_ms, bool copy = true);
         bool isSwapPending();
         bool isInterpolationPending();
         void copyRefreshToDrawing(void);
