@@ -50,6 +50,8 @@ template <typename RGB, unsigned int optionFlags>
 void SMLayerBackground<RGB, optionFlags>::frameRefreshCallback(void) {
     handleBufferSwap();
 
+    updateInterpolation();
+
     calculateBackgroundLUT(backgroundColorCorrectionLUT, backgroundBrightness);
 }
 
@@ -899,7 +901,7 @@ void SMLayerBackground<RGB, optionFlags>::drawMonoBitmap(int16_t x, int16_t y, u
 }
 
 template <typename RGB, unsigned int optionFlags>
-void SMLayerBackground<RGB, optionFlags>::handleBufferSwap(void) {
+void SMLayerBackground<RGB, optionFlags>::updateInterpolation(void) {
     // do once-per-frame interpolation calculations
     if(numBuffers > 2) {
         if(framesInterpolated < totalFramesToInterpolate)
@@ -909,7 +911,10 @@ void SMLayerBackground<RGB, optionFlags>::handleBufferSwap(void) {
         icPrev = 257 * (0x10000 - fcCoefficient);
         icNext = 257 * fcCoefficient;
     }
+}
 
+template <typename RGB, unsigned int optionFlags>
+void SMLayerBackground<RGB, optionFlags>::handleBufferSwap(void) {
     if (!swapPending)
         return;
 

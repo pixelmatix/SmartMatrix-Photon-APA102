@@ -113,6 +113,7 @@ class SMLayerBackground : public SM_Layer {
         static volatile bool swapPending;
         static bool swapWithCopy;
         void handleBufferSwap(void);
+        void updateInterpolation(void);
         uint32_t calculateFcInterpCoefficient(void);
         bitmap_font *font;
 
