@@ -24,6 +24,11 @@
 #include "SmartMatrix3_Photon_Apa102.h"
 #include "application.h"
 
+#define LEDTYPE_APA102 0
+#define LEDTYPE_SK9822 1
+
+#define LEDTYPE LEDTYPE_APA102
+
 
 #define INLINE __attribute__( ( always_inline ) ) inline
 
@@ -176,10 +181,10 @@ INLINE void SmartMatrix3<refreshDepth, matrixWidth, matrixHeight, panelType, opt
         temp0green = tempRow0[j].green;
         temp0blue = tempRow0[j].blue;
 
+#if (LEDTYPE == LEDTYPE_APA102)
         uint8_t globalbrightness = (0x20UL * (dimmingMaximum - dimmingFactor)) / dimmingMaximum;
         uint8_t localshift = 0;
 
-#if 1
         // dynamic GBC control: lower GBC value until it's at the lowest, or the brightest RGB channel has its MSB set
         uint16_t value = temp0red | temp0green | temp0blue;
 
@@ -194,16 +199,27 @@ INLINE void SmartMatrix3<refreshDepth, matrixWidth, matrixHeight, panelType, opt
 
         // shift needs to put 16-bit color value into lowest byte, which will be sent over SPI
         localshift = 8 - localshift;
-#else
-        // not using dynamic GBC control, shift needs to put 16-bit color value into lowest byte, which will be sent over SPI
-        localshift = 8;
-#endif
+
         // global brightness
         matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 0] = 0xE0 | globalbrightness;
 
         matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 1] = temp0blue >> localshift;
         matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 2] = temp0green >> localshift;
         matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 3] = temp0red >> localshift;
+#endif
+#if (LEDTYPE == LEDTYPE_SK9822)
+        uint8_t globalbrightness = (0x1F * (dimmingMaximum - dimmingFactor)) / dimmingMaximum;
+
+        uint16_t maxrgb = max(max(temp0red, temp0green), temp0blue);
+
+        uint16_t value  = (maxrgb * 31 * globalbrightness) / 0x10000 / 31;
+
+        // global brightness
+        matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 0] = 0xE0 | (value+1);
+        matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 1] = ((temp0blue * globalbrightness) / (value + 1)) >> 8;
+        matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 2] = ((temp0green * globalbrightness) / (value + 1)) >> 8;
+        matrixUpdateDataByte[4 + ((currentRow * matrixWidth + i) * 4) + 3] = ((temp0red * globalbrightness) / (value + 1)) >> 8;
+#endif
     }
 }
 
