@@ -1,6 +1,6 @@
 Port of the [SmartMatrix Library](https://github.com/pixelmatix/SmartMatrix) to the Particle Photon with support for driving APA102 LEDs (only).
 
-How to compile using [Particle Build]():
+How to compile using [Particle Build](https://build.particle.io):
 
 * Import SmartMatrix-Photon-APA102
   * In Libraries View, press "Contribute Library"
